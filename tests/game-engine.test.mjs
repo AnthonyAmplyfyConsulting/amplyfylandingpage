@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRound,revealTile,amountFor,BASE_REWARD,MAX_REWARD,SAFE_COUNT} from '../dist/game-engine.mjs';
+test('a first-tile mine preserves the guaranteed reward and ends play',()=>{const r=createRound();const mine=[...r.mines][0];assert.equal(revealTile(r,mine),'mine');assert.equal(r.amount,BASE_REWARD);assert.equal(r.ended,true);assert.equal(revealTile(r,(mine+1)%16),null)});
+test('all fourteen safe tiles unlock exactly $500; mines never count as gems',()=>{const r=createRound();for(let i=0;i<16;i++)if(!r.mines.has(i))revealTile(r,i);assert.equal(r.gems,SAFE_COUNT);assert.equal(r.amount,MAX_REWARD);assert.equal(r.cleared,true);assert.equal(r.ended,true)});
+test('rewards grow on every gem and survive a later mine',()=>{const r=createRound();let prior=r.amount;for(let i=0;i<16;i++){if(r.mines.has(i))continue;revealTile(r,i);assert.ok(r.amount>prior);prior=r.amount;if(r.gems===5)break;}revealTile(r,[...r.mines][0]);assert.equal(r.amount,prior);assert.equal(r.cleared,false)});
+test('duplicate and invalid tile selections cannot increase rewards',()=>{const r=createRound();const safe=Array.from({length:16},(_,i)=>i).find(i=>!r.mines.has(i));revealTile(r,safe);const amount=r.amount;assert.equal(revealTile(r,safe),null);for(const i of [-1,16,1.1])assert.equal(revealTile(r,i),null);assert.equal(r.amount,amount)});
+test('fresh boards contain exactly two unique randomized mines',()=>{const layouts=new Set();for(let i=0;i<100;i++){const r=createRound();assert.equal(r.mines.size,2);assert.equal(r.revealed.size,0);layouts.add([...r.mines].sort((a,b)=>a-b).join(','));}assert.ok(layouts.size>25)});
+test('reward schedule reaches the maximum only on a full clear',()=>{assert.equal(amountFor(0),50);for(let i=1;i<SAFE_COUNT;i++){assert.ok(amountFor(i)>amountFor(i-1));assert.ok(amountFor(i)<500)}assert.equal(amountFor(SAFE_COUNT),500)});
