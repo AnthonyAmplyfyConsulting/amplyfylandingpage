@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.sites/
+outputs/
+worker/assets.generated.mjs
+dist/server/
+*.p12
+*.pfx
+*.key
+dist/
